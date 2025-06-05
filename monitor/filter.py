@@ -23,7 +23,7 @@ def filter_idle_sessions(sessions, logged_in_users, idle_threshold):
         name = session.get("name")
         idle = session.get("idle", 0)
 
-        if idle >= idle_threshold and name not in logged_in_users:
+        if idle >= idle_threshold:
             filtered.append(session)
             logging.info(f"필터링 통과 : {name} (idle {idle}s)")
 

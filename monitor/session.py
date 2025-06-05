@@ -2,18 +2,20 @@
 
 import subprocess
 import logging
+from datetime import datetime
 
 def get_tmux_sessions():
     """
     현재 실행 중인 tmux 세션 목록과 각 세션의 idle 시간(초 단위)을 반환
-    ex) [{'name': 'session', 'idle' : 4000}, ...]
+    ex) [{'name': 'test1', 'idle': 4000}, ...]
     """
 
     sessions = []
 
     try:
+        # 1. 세션 이름 수집
         result = subprocess.run(
-            ["tmux", "list-sessions", "-F", "#{session_name}"],
+            ["tmux", "-S", "/tmp/tmux-shared/default", "list-sessions", "-F", "#{session_name}"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
@@ -25,9 +27,10 @@ def get_tmux_sessions():
 
         session_names = result.stdout.strip().split('\n')
 
+        # 2. 각 세션의 idle 시간 계산
         for name in session_names:
             idle_result = subprocess.run(
-                ["tmux", "display-message", "-p", "-t", name, "#{session_idle}"],
+                ["tmux", "-S", "/tmp/tmux-shared/default", "display-message", "-p", "-t", name, "#{session_activity}"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True
@@ -38,7 +41,9 @@ def get_tmux_sessions():
                 continue
 
             try:
-                idle_seconds = int(idle_result.stdout.strip())
+                last_active_ts = int(idle_result.stdout.strip())
+                now_ts = int(datetime.now().timestamp())
+                idle_seconds = now_ts - last_active_ts
                 sessions.append({"name": name, "idle": idle_seconds})
             except ValueError:
                 logging.warning(f"세션 '{name}'의 idle 시간 파싱 실패 : {idle_result.stdout.strip()}")

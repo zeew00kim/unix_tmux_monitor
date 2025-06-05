@@ -2,13 +2,13 @@
 
 ### session.py -> get_tmux_sessions()
 
-tmux list-sessions -F "#{session_name}" 
+tmux list-sessions -F "#{session_name}"<br>
 명령어를 통해 모든 세션 이름을 가져옵니다.
 
-각 세션에 대해 tmux display-message -p "#{session_idle}" 
+각 세션에 대해 tmux display-message -p "#{session_idle}"<br>
 명령어를 실행하여 idle 시간을 초 단위로 조회합니다.
 
-{ "name": 세션명, "idle": idle시간(초) } 
+{ "name": 세션명, "idle": idle시간(초) }<br>
 형식의 딕셔너리를 리스트로 구성해 반환합니다.
 
 ---

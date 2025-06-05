@@ -1,51 +1,26 @@
-## 유닉스기초 3차 팀 프로젝트 (TMUX monitor)
+## 루트 계정에서 생성된 tmux 서버에서 사용하는 감시도구
 
-### session.py -> get_tmux_sessions()
+### 루트 계정에서 초기 환경 설정
+1. /task/tmux_monitor 디렉토리에 코드와 로그 저장
+2. /tmp/tmux-shared/default 경로에 tmux 소켓 생성
+3. 루트가 모든 세션 제어 가능하도록 공유 경로 설정
 
-tmux list-sessions -F "#{session_name}"<br>
-명령어를 통해 모든 세션 이름을 가져옵니다.
+### 일반 사용자(user1)에서 테스트 세션 생성
+1. /tmp/tmux-shared/default 소켓을 사용해 test1 세션 생성
+2. 이 세션은 루트가 만든 소켓 기반이므로 루트가 감시 가능
 
-각 세션에 대해 tmux display-message -p "#{session_idle}"<br>
-명령어를 실행하여 idle 시간을 초 단위로 조회합니다.
+### 루트 계정에서 모니터링 실행
+1. tmux_monitor.py 실행 시:
+2. /tmp/tmux-shared/default의 세션 목록 가져옴
+3. #{session_activity}로 idle 시간 계산
+4. idle 시간이 기준 이상인 세션을 필터링
+5. 세션에 경고 메시지 전송
+6. 해당 세션 강제 종료
 
-{ "name": 세션명, "idle": idle시간(초) }<br>
-형식의 딕셔너리를 리스트로 구성해 반환합니다.
+### 루트 계정에서 로그 확인
+1. logs/tmux_monitor.log에 모든 작업 기록됨
+2. 어떤 세션이 종료됐는지, 어떤 메시지를 보냈는지 로그에서 확인 가능
 
----
-### users.py -> get_logged_in_users()
-
-**작동 방식 :**
-1. who 명령어를 사용하여 현재 로그인된 사용자 세션을 조회합니다.
-2. 각 출력 라인에서 **첫 번째 필드(사용자명)**만 추출합니다.
-3. 중복 제거(set) 후 리스트로 변환하여 반환합니다.
-
-**예외 처리 :**
-1. who 명령 실행 실패 시 로그에 에러 기록 후 빈 리스트 반환
-2. 명령 실행 중 예외 발생 시 로그 기록 후 빈 리스트 반환
----
-### filter.py -> filter_idle_sessions()
-
-**작동 방식 :**
-1. sessions 리스트의 각 항목(세션 딕셔너리)을 순회하면서 아래 조건을 확인:
-    - session["idle"] >= idle_threshold
-    - session["name"] not in logged_in_users
-2. 조건을 만족하는 세션만 리스트에 담아 반환합니다.
-3. 통과한 세션에 대해서는 로그에 기록합니다.
----
-### notify.py -> send_tmux_message()
-
-**작동 방식 :**
-1. tmux display-message -t `<session_name>` `<message>` 명령을 subprocess로 실행
-2. 명령 실행이 실패할 경우 로그에 에러 메시지를 기록
----
-### tmux_monitor.py (메인 실행 스크립트)
-
-**주요 실행 흐름 :**
-1. tmux 세션 목록 수집 -> get_tmux_sessions()
-2. 로그인 사용자 목록 수집 -> get_logged_in_users()
-3. 비활성 세션 필터링 -> filter_idle_sessions()
-4. 메시지 전송 + 로그기록 -> send_tmux_message() + log_event()
-
-**로그 출력 :**
-1. 실행 결과는 logs/tmux_monitor.log에 자동 저장됩니다.
-2. 로그 항목에는 실행 시간, 필터링 결과, 메시지 전송 내역 등이 포함됩니다.
+### 테스트 세션 idle 상태 유도
+1. tmux 세션 접속 → 아무 입력 없이 10초 이상 대기 → 세션 idle 상태
+2. tmux_monitor.py 실행 시 해당 세션이 자동 감지, 경고 후 종료

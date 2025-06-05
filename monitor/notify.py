@@ -6,10 +6,6 @@ import logging
 def send_tmux_message(session_name, message):
     """
     지정한 tmux 세션에 메시지를 전송한다.
-
-    Args:
-        session_name (str): 메시지를 보낼 tmux 세션 이름
-        message (str): 표시할 메시지 내용
     """
     try:
         subprocess.run(
@@ -22,13 +18,21 @@ def send_tmux_message(session_name, message):
     except Exception as e:
         logging.exception(f"[예외 발생] 알림 전송 중 오류: {e}")
 
-
 def log_event(session_name, message):
     """
-    지정한 세션에 대해 로그 파일에 이벤트 기록을 남긴다.
-
-    Args:
-        session_name (str): 대상 세션 이름
-        message (str): 전송한 메시지 내용
+    로그 파일에 알림 전송 기록을 남긴다.
     """
     logging.info(f"[로그 기록] 세션 '{session_name}'에 메시지 기록됨: {message}")
+
+def kill_tmux_session(session_name):
+    """
+    지정한 세션을 종료한다.
+    """
+    try:
+        subprocess.run(
+            ["tmux", "-S", "/tmp/tmux-shared/default", "kill-session", "-t", session_name],
+            check=True
+        )
+        logging.info(f"[세션 종료] '{session_name}' 세션이 자동 종료되었습니다.")
+    except subprocess.CalledProcessError as e:
+        logging.error(f"[세션 종료 실패] '{session_name}': {e}")
